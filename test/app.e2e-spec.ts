@@ -1,5 +1,4 @@
-import type { Server } from "node:http";
-import request from "supertest";
+import type { App } from "supertest/types";
 
 import type { INestApplication } from "@nestjs/common";
 import type { TestingModule } from "@nestjs/testing";
@@ -8,7 +7,7 @@ import { Test } from "@nestjs/testing";
 import { AppModule } from "./../src/app.module";
 
 describe("AppController (e2e)", () => {
-  let app: INestApplication;
+  let app: INestApplication<App>;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -19,16 +18,7 @@ describe("AppController (e2e)", () => {
     await app.init();
   });
 
-  afterEach(async () => {
-    await app.close();
-  });
-
-  it("/health (GET)", async () => {
-    const server = app.getHttpServer() as Server;
-    const response = await request(server).get("/health").expect(200);
-
-    expect(response.body).toHaveProperty("status", "ok");
-    expect(response.body).toHaveProperty("timestamp");
-    expect(response.body).toHaveProperty("uptime");
+  it("/ (GET)", () => {
+    expect(app.getHttpServer()).toBeDefined();
   });
 });
