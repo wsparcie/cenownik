@@ -8,6 +8,27 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cenownik_user
+          POSTGRES_PASSWORD: cenownik_password
+          POSTGRES_DB: cenownik
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U cenownik_user -d cenownik"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgresql://cenownik_user:cenownik_password@localhost:5432/cenownik
+      JWT_SECRET: test-jwt-secret-for-ci
+      NODE_ENV: test
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,6 +58,18 @@ jobs:
 
       - name: Check types
         run: npm run typecheck
+        if: always()
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+        if: always()
+
+      - name: Apply Prisma schema to database
+        run: npx prisma migrate deploy
+        if: always()
+
+      - name: Seed database
+        run: npx prisma db seed
         if: always()
 
       - name: Run tests

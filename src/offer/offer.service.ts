@@ -100,20 +100,27 @@ export class OfferService {
       typeof this.database.offer.update
     >[0]["data"] = {};
 
-    if (updateOfferDto.link !== undefined)
+    if (updateOfferDto.link !== undefined) {
       dataToUpdate.link = updateOfferDto.link;
-    if (updateOfferDto.title !== undefined)
+    }
+    if (updateOfferDto.title !== undefined) {
       dataToUpdate.title = updateOfferDto.title;
-    if (updateOfferDto.price !== undefined)
+    }
+    if (updateOfferDto.price !== undefined) {
       dataToUpdate.price = updateOfferDto.price;
-    if (updateOfferDto.description !== undefined)
+    }
+    if (updateOfferDto.description !== undefined) {
       dataToUpdate.description = updateOfferDto.description;
-    if (updateOfferDto.source !== undefined)
+    }
+    if (updateOfferDto.source !== undefined) {
       dataToUpdate.source = updateOfferDto.source;
-    if (updateOfferDto.images !== undefined)
+    }
+    if (updateOfferDto.images !== undefined) {
       dataToUpdate.images = updateOfferDto.images;
-    if (updateOfferDto.userId !== undefined)
+    }
+    if (updateOfferDto.userId !== undefined) {
       dataToUpdate.userId = updateOfferDto.userId;
+    }
 
     return this.database.offer.update({
       where: { id },

@@ -17,9 +17,10 @@ export class UserService {
   constructor(private database: DatabaseService) {}
 
   async create(registerDto: RegisterDto): Promise<UserResponseDto> {
-    const hashedPassword = registerDto.password
-      ? await hash(registerDto.password, 10)
-      : undefined;
+    const hashedPassword =
+      registerDto.password === undefined
+        ? undefined
+        : await hash(registerDto.password, 10);
 
     const user = await this.database.user.create({
       data: {
@@ -82,12 +83,15 @@ export class UserService {
       role?: Role;
     } = {};
 
-    if (updateUserDto.email !== undefined)
+    if (updateUserDto.email !== undefined) {
       updateData.email = updateUserDto.email;
-    if (updateUserDto.username !== undefined)
+    }
+    if (updateUserDto.username !== undefined) {
       updateData.username = updateUserDto.username;
-    if (updateUserDto.role !== undefined && isAdmin)
+    }
+    if (updateUserDto.role !== undefined && isAdmin) {
       updateData.role = updateUserDto.role;
+    }
     if (updateUserDto.password != null && updateUserDto.password !== "") {
       updateData.password = await hash(updateUserDto.password, 10);
     }

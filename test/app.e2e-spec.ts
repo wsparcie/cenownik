@@ -1,3 +1,4 @@
+import type { Server } from "node:http";
 import request from "supertest";
 
 import type { INestApplication } from "@nestjs/common";
@@ -22,14 +23,12 @@ describe("AppController (e2e)", () => {
     await app.close();
   });
 
-  it("/health (GET)", () => {
-    return request(app.getHttpServer())
-      .get("/health")
-      .expect(200)
-      .expect((res) => {
-        expect(res.body).toHaveProperty("status", "ok");
-        expect(res.body).toHaveProperty("timestamp");
-        expect(res.body).toHaveProperty("uptime");
-      });
+  it("/health (GET)", async () => {
+    const server = app.getHttpServer() as Server;
+    const response = await request(server).get("/health").expect(200);
+
+    expect(response.body).toHaveProperty("status", "ok");
+    expect(response.body).toHaveProperty("timestamp");
+    expect(response.body).toHaveProperty("uptime");
   });
 });
