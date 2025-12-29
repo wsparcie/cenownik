@@ -1,98 +1,113 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+<pre>
+      __
+     /  \      ____  ____  _  _  ____  _  _  _  _  _  _  _  _
+    / /\ \    / ___]| ===|| \| ||  _  || |/ \| || \| || || / /
+   / /__\ \  | [___ | ___||  ` || |_| || \   / ||  ` || ||  \
+  /________\  \____]|____||_|\_||_____| \_/ \_/ |_|\_||_||_|\_\
+  \        /
+   \      /      -- P R I C E   T R A C K I N G   B O T --
+    \____/
+</pre>
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Tech Stack
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+<div align="center">
 
-## Description
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org/) [![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?logo=node.js)](https://nodejs.org/) [![NestJS](https://img.shields.io/badge/NestJS-11.x-E0234E?logo=nestjs)](https://nestjs.com/) [![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748?logo=prisma)](https://www.prisma.io/) [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.x-4169E1?logo=postgresql)](https://www.postgresql.org/)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+[![Cheerio](https://img.shields.io/badge/Cheerio-1.x-E88C1D)](https://cheerio.js.org/) [![Cron](https://img.shields.io/badge/Cron-Scheduling-333333)](https://docs.nestjs.com/techniques/task-scheduling) [![Swagger](https://img.shields.io/badge/Swagger-API_Docs-85EA2D?logo=swagger)](https://swagger.io/) [![Jest](https://img.shields.io/badge/Jest-30.x-C21325?logo=jest)](https://jestjs.io/)
 
-## Project setup
+[![Status](https://img.shields.io/badge/Status-Alpha-yellow)]() [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-```bash
-$ npm install
+</div>
+
+## About the Project
+
+**Cenownik** is a backend application that automatically scrapes product prices from online stores. The user adds an offer link and sets a target price – when the price drops below the set value, they receive a notification.
+
+### How It Works
+
+1. User adds an offer link and sets the desired target price
+2. Application periodically scrapes the page and checks the current price
+3. When the price drops below the set value, the user receives a notification
+
+### Target Audience
+
+Users looking for the best deals on products from online stores.
+
+### Added Value
+
+- **Time saved** - automatic price monitoring instead of manual checking
+- **Better deals** - instant notifications when prices drop
+- **Multi-store support** - aggregation from multiple sources
+- **Price history** - track price changes over time
+
+### API Documentation
+
+Swagger documentation available at: `http://localhost:3000/api`
+
+## Features
+
+- **Database storage** - persist offer links and target prices
+- **Price scraping** - automatically fetch prices from online stores
+- **User authentication** - JWT-based login and registration
+- **Email notifications** - alerts when prices drop below target
+- **Price history** - track price changes over time
+- **Discord notifications** - receive alerts via Discord
+
+## Database Schema
+
+```mermaid
+erDiagram
+    User ||--o{ Offer : "creates"
+
+    User {
+        int id PK "Primary Key"
+        string email UK "Unique Email"
+        string username "Username"
+        string password "Hashed Password"
+        enum role "USER/ADMIN/GUEST"
+        datetime createdAt "Created"
+        datetime updatedAt "Updated"
+    }
+
+    Offer {
+        int id PK "Primary Key"
+        string link UK "Unique URL"
+        string title "Offer Title"
+        float price "Current Price"
+        string description "Description"
+        string source "Source Store"
+        string[] images "Image URLs"
+        int userId FK "User Reference"
+        datetime createdAt "Created"
+        datetime updatedAt "Updated"
+    }
 ```
 
-## Compile and run the project
+### Auth
 
-```bash
-# development
-$ npm run start
+- `POST /auth/register` - User registration
+- `POST /auth/login` - Login (returns JWT token)
 
-# watch mode
-$ npm run start:dev
+### Users
 
-# production mode
-$ npm run start:prod
-```
+- `GET /users` - List users (ADMIN)
+- `GET /users/:email` - User details
+- `PATCH /users/:email` - Update user
+- `DELETE /users/:email` - Delete user (ADMIN)
 
-## Run tests
+### Offers
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- `GET /offers` - List offers
+- `GET /offers/:id` - Offer details
+- `GET /offers/statistics` - Offer statistics
+- `POST /offers` - Add offer (requires auth)
+- `PATCH /offers/:id` - Update offer (ADMIN)
+- `DELETE /offers/:id` - Delete offer (ADMIN)
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+MIT
