@@ -133,7 +133,7 @@ describe("UserController", () => {
 
   describe("remove", () => {
     it("should call service remove method", async () => {
-      mockUserService.remove.mockResolvedValue();
+      mockUserService.remove.mockResolvedValue(undefined);
       await controller.remove("uzytkownik@imejl.pl");
       expect(mockUserService.remove).toHaveBeenCalledWith(
         "uzytkownik@imejl.pl",
