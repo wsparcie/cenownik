@@ -133,17 +133,44 @@ export class ScraperMoreleService implements OnModuleInit {
     const scraped = await this.scrapeUrl(offer.link);
 
     if (scraped.price !== null) {
+      const previousPrice = Number(offer.price);
+      const newPrice = scraped.price;
+      const priceChanged = previousPrice !== newPrice;
+
+      const targetPrice =
+        offer.targetPrice !== null ? Number(offer.targetPrice) : null;
+      const targetPriceReached =
+        targetPrice !== null && newPrice <= targetPrice;
+
+      if (priceChanged) {
+        await this.databaseService.priceHistory.create({
+          data: {
+            offerId: offerId,
+            price: newPrice,
+            previousPrice: previousPrice,
+            targetPriceReached: targetPriceReached,
+            targetPriceAtTime: offer.targetPrice,
+          },
+        });
+
+        if (targetPriceReached) {
+          this.logger.log(
+            `TARGET REACHED for offer ${String(offerId)}: ${String(newPrice)} PLN <= ${String(targetPrice)} PLN`,
+          );
+        }
+      }
+
       await this.databaseService.offer.update({
         where: { id: offerId },
         data: {
-          price: scraped.price,
+          price: newPrice,
           title: scraped.title ?? offer.title,
           source: scraped.source,
         },
       });
 
       this.logger.log(
-        `Updated offer ${String(offerId)}: ${String(scraped.title)} - ${String(scraped.price)} PLN`,
+        `Updated offer ${String(offerId)}: ${String(scraped.title)} - ${String(newPrice)} PLN${priceChanged ? ` (was ${String(previousPrice)} PLN)` : ""}`,
       );
     }
   }
@@ -166,6 +193,28 @@ export class ScraperMoreleService implements OnModuleInit {
   async handleScheduledScraping(): Promise<void> {
     this.logger.log("Starting scheduled price scraping...");
     await this.scrapeAllOffers();
+  }
+
+  async getPriceHistory(offerId: number) {
+    return this.databaseService.priceHistory.findMany({
+      where: { offerId },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async getTargetReachedHistory(offerId?: number) {
+    return this.databaseService.priceHistory.findMany({
+      where: {
+        targetPriceReached: true,
+        ...(offerId !== undefined ? { offerId } : {}),
+      },
+      include: {
+        offer: {
+          select: { id: true, title: true, link: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   private async delay(ms: number): Promise<void> {

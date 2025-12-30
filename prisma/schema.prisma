@@ -52,13 +52,31 @@ model Offer {
   createdAt   DateTime @db.Timestamptz
   updatedAt   DateTime @updatedAt @db.Timestamptz
 
-  images String[]
-  user   User?    @relation(fields: [userId], references: [id])
-  userId Int?
+  images       String[]
+  user         User?          @relation(fields: [userId], references: [id])
+  userId       Int?
+  priceHistory PriceHistory[]
 
   @@index([price])
   @@index([title])
   @@map("offers")
+}
+
+model PriceHistory {
+  id                 Int      @id @default(autoincrement())
+  price              Decimal  @db.Decimal(10, 2)
+  previousPrice      Decimal? @db.Decimal(10, 2)
+  targetPriceReached Boolean  @default(false)
+  targetPriceAtTime  Decimal? @db.Decimal(10, 2)
+  createdAt          DateTime @default(now()) @db.Timestamptz
+
+  offer   Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  offerId Int
+
+  @@index([offerId])
+  @@index([createdAt])
+  @@index([targetPriceReached])
+  @@map("price_history")
 }
 
 model Config {

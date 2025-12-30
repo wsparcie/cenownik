@@ -98,4 +98,26 @@ export class ScraperMoreleController {
     await this.scraperService.setCronExpression(cron);
     return { message: "Cron expression updated", cron };
   }
+
+  @Get("history/:offerId")
+  @ApiOperation({ summary: "Get price history for a specific offer" })
+  @ApiParam({ name: "offerId", description: "Offer ID" })
+  @ApiResponse({ status: 200, description: "Price history returned" })
+  async getPriceHistory(@Param("offerId", ParseIntPipe) offerId: number) {
+    return this.scraperService.getPriceHistory(offerId);
+  }
+
+  @Get("history/targets/reached")
+  @ApiOperation({ summary: "Get all instances when target price was reached" })
+  @ApiQuery({
+    name: "offerId",
+    required: false,
+    description: "Filter by offer ID",
+  })
+  @ApiResponse({ status: 200, description: "Target reached history returned" })
+  async getTargetReachedHistory(@Query("offerId") offerId?: string) {
+    const parsedOfferId =
+      offerId !== undefined ? Number.parseInt(offerId, 10) : undefined;
+    return this.scraperService.getTargetReachedHistory(parsedOfferId);
+  }
 }
