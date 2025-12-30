@@ -5,10 +5,17 @@ import { AppService } from "./app.service";
 import { AuthModule } from "./auth/auth.module";
 import { DatabaseModule } from "./database/database.module";
 import { OfferModule } from "./offer/offer.module";
+import { ScraperMoreleModule } from "./scraper-morele/scraper-morele.module";
 import { UserModule } from "./user/user.module";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, UserModule, OfferModule],
+  imports: [
+    DatabaseModule,
+    AuthModule,
+    UserModule,
+    OfferModule,
+    ScraperMoreleModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
