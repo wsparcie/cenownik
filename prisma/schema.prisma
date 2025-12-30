@@ -46,6 +46,7 @@ model Offer {
   link        String   @unique @db.Text
   title       String   @db.VarChar(200)
   price       Decimal  @db.Decimal(10, 2)
+  targetPrice Decimal? @db.Decimal(10, 2)
   description String?  @db.Text
   source      String   @db.VarChar(100)
   createdAt   DateTime @db.Timestamptz
@@ -58,4 +59,12 @@ model Offer {
   @@index([price])
   @@index([title])
   @@map("offers")
+}
+
+model Config {
+  key       String   @id @db.VarChar(100)
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@map("config")
 }

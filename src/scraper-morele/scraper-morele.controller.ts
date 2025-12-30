@@ -1,16 +1,19 @@
 import { Role } from "@prisma/client";
 
 import {
+  Body,
   Controller,
   Get,
   Param,
   ParseIntPipe,
   Post,
+  Put,
   Query,
   UseGuards,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -61,5 +64,38 @@ export class ScraperMoreleController {
     @Query("url") url: string,
   ): Promise<{ price: number | null; title: string | null; source: string }> {
     return this.scraperService.scrapeUrl(url);
+  }
+
+  @Get("config/cron")
+  @ApiOperation({ summary: "Get current cron expression for scraping" })
+  @ApiResponse({ status: 200, description: "Current cron expression" })
+  async getCron(): Promise<{ cron: string }> {
+    const cron = await this.scraperService.getCronExpression();
+    return { cron };
+  }
+
+  @Put("config/cron")
+  @ApiOperation({ summary: "Update cron expression for scraping" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        cron: {
+          type: "string",
+          example: "*/30 * * * *",
+          description: "Cron expression (e.g., every 30 min: */30 * * * *)",
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: "Cron expression updated" })
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth("access-token")
+  async setCron(
+    @Body("cron") cron: string,
+  ): Promise<{ message: string; cron: string }> {
+    await this.scraperService.setCronExpression(cron);
+    return { message: "Cron expression updated", cron };
   }
 }
