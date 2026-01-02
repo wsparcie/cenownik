@@ -117,7 +117,7 @@ export class ScraperMoreleController {
   @ApiResponse({ status: 200, description: "Target reached history returned" })
   async getTargetReachedHistory(@Query("offerId") offerId?: string) {
     const parsedOfferId =
-      offerId !== undefined ? Number.parseInt(offerId, 10) : undefined;
+      offerId === undefined ? undefined : Number.parseInt(offerId, 10);
     return this.scraperService.getTargetReachedHistory(parsedOfferId);
   }
 }

@@ -57,4 +57,22 @@ export class DatabaseController {
     await this.databaseService.clearAllData();
     return { message: "All data cleared successfully" };
   }
+
+  @Get("health")
+  @ApiOperation({ summary: "Check database health status" })
+  @ApiResponse({ status: 200, description: "Database health check completed" })
+  async checkHealth() {
+    const healthCheck = await this.databaseService.isHealthy();
+
+    return {
+      status: healthCheck.healthy ? "healthy" : "unhealthy",
+      service: "database",
+      timestamp: new Date().toISOString(),
+      details: {
+        connected: healthCheck.healthy,
+        latencyMs: healthCheck.latencyMs,
+        ...(healthCheck.error !== undefined && { error: healthCheck.error }),
+      },
+    };
+  }
 }

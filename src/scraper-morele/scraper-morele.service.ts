@@ -5,6 +5,7 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { SchedulerRegistry } from "@nestjs/schedule";
 
 import { DatabaseService } from "../database/database.service";
+import { EmailService } from "../notification/services/email.service";
 
 const SCRAPE_CRON_JOB = "scrape-cron-job";
 const DEFAULT_CRON = "0 * * * *";
@@ -22,6 +23,7 @@ export class ScraperMoreleService implements OnModuleInit {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly schedulerRegistry: SchedulerRegistry,
+    private readonly emailService: EmailService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -31,10 +33,14 @@ export class ScraperMoreleService implements OnModuleInit {
   }
 
   async getCronExpression(): Promise<string> {
-    const config = await this.databaseService.config.findUnique({
-      where: { key: "SCRAPE_CRON" },
-    });
-    return config?.value ?? process.env["SCRAPE_CRON"] ?? DEFAULT_CRON;
+    try {
+      const config = await this.databaseService.config.findUnique({
+        where: { key: "SCRAPE_CRON" },
+      });
+      return config?.value ?? process.env.SCRAPE_CRON ?? DEFAULT_CRON;
+    } catch {
+      return process.env.SCRAPE_CRON ?? DEFAULT_CRON;
+    }
   }
 
   async setCronExpression(cronExpression: string): Promise<void> {
@@ -123,6 +129,7 @@ export class ScraperMoreleService implements OnModuleInit {
   async scrapeAndUpdateOffer(offerId: number): Promise<void> {
     const offer = await this.databaseService.offer.findUnique({
       where: { id: offerId },
+      include: { user: true },
     });
 
     if (offer === null) {
@@ -138,17 +145,17 @@ export class ScraperMoreleService implements OnModuleInit {
       const priceChanged = previousPrice !== newPrice;
 
       const targetPrice =
-        offer.targetPrice !== null ? Number(offer.targetPrice) : null;
+        offer.targetPrice === null ? null : Number(offer.targetPrice);
       const targetPriceReached =
         targetPrice !== null && newPrice <= targetPrice;
 
       if (priceChanged) {
         await this.databaseService.priceHistory.create({
           data: {
-            offerId: offerId,
+            offerId,
             price: newPrice,
-            previousPrice: previousPrice,
-            targetPriceReached: targetPriceReached,
+            previousPrice,
+            targetPriceReached,
             targetPriceAtTime: offer.targetPrice,
           },
         });
@@ -157,6 +164,26 @@ export class ScraperMoreleService implements OnModuleInit {
           this.logger.log(
             `TARGET REACHED for offer ${String(offerId)}: ${String(newPrice)} PLN <= ${String(targetPrice)} PLN`,
           );
+
+          if (offer.user?.email !== undefined && offer.user.email !== "") {
+            await this.sendTargetReachedEmail(
+              offer.user.email,
+              offer.user.username ?? offer.user.email.split("@")[0],
+              {
+                id: offer.id,
+                title: scraped.title ?? offer.title,
+                link: offer.link,
+                currentPrice: newPrice,
+                targetPrice,
+                previousPrice,
+                source: scraped.source,
+                description: offer.description,
+                images: offer.images,
+                createdAt: offer.createdAt,
+                updatedAt: new Date(),
+              },
+            );
+          }
         }
       }
 
@@ -171,6 +198,40 @@ export class ScraperMoreleService implements OnModuleInit {
 
       this.logger.log(
         `Updated offer ${String(offerId)}: ${String(scraped.title)} - ${String(newPrice)} PLN${priceChanged ? ` (was ${String(previousPrice)} PLN)` : ""}`,
+      );
+    }
+  }
+
+  private async sendTargetReachedEmail(
+    email: string,
+    userName: string,
+    offer: {
+      id: number;
+      title: string;
+      link: string;
+      currentPrice: number;
+      targetPrice: number;
+      previousPrice: number | null;
+      source: string;
+      description: string | null;
+      images: string[];
+      createdAt: Date;
+      updatedAt: Date;
+    },
+  ): Promise<void> {
+    try {
+      const { subject, html } =
+        this.emailService.generatePriceMatchNotificationEmail(userName, offer);
+
+      const success = await this.emailService.sendEmail(email, subject, html);
+      if (success) {
+        this.logger.log(`Email sent to ${email} for target price reached`);
+      } else {
+        this.logger.warn(`Failed to send email to ${email}`);
+      }
+    } catch (error) {
+      this.logger.error(
+        `Error sending email to ${email}: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -206,7 +267,7 @@ export class ScraperMoreleService implements OnModuleInit {
     return this.databaseService.priceHistory.findMany({
       where: {
         targetPriceReached: true,
-        ...(offerId !== undefined ? { offerId } : {}),
+        ...(offerId === undefined ? {} : { offerId }),
       },
       include: {
         offer: {

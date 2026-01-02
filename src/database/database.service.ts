@@ -40,4 +40,25 @@ export class DatabaseService
     await this.offer.deleteMany();
     await this.user.deleteMany();
   }
+
+  async isHealthy(): Promise<{
+    healthy: boolean;
+    latencyMs: number;
+    error?: string;
+  }> {
+    const start = Date.now();
+    try {
+      await this.$queryRaw`SELECT 1`;
+      return {
+        healthy: true,
+        latencyMs: Date.now() - start,
+      };
+    } catch (error) {
+      return {
+        healthy: false,
+        latencyMs: Date.now() - start,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
 }
