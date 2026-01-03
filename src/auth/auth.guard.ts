@@ -13,16 +13,6 @@ export class AuthGuard extends PassportAuthGuard("jwt") {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublic = this.reflector.getAllAndOverride<boolean>("isPublic", [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
-    if (isPublic) {
-      const result = super.canActivate(context);
-      return result instanceof Promise ? await result : Boolean(result);
-    }
-
     const result = super.canActivate(context);
     return result instanceof Promise ? await result : Boolean(result);
   }

@@ -34,38 +34,6 @@ export class OfferService {
     return offer;
   }
 
-  async findByLink(link: string): Promise<Offer | null> {
-    return this.database.offer.findUnique({ where: { link } });
-  }
-
-  async findOneOrCreate(createOfferDto: CreateOfferDto): Promise<{
-    offer: Offer;
-    created: boolean;
-  }> {
-    const { link } = createOfferDto;
-
-    if (!link) {
-      throw new Error("Link is required to create or update an offer");
-    }
-
-    const existingOffer = await this.database.offer.findUnique({
-      where: { link },
-    });
-
-    if (existingOffer === null) {
-      this.logger.debug(`Creating new offer: ${link}`);
-      const newOffer = await this.create(createOfferDto);
-      return { offer: newOffer, created: true };
-    }
-
-    this.logger.debug(`Updating existing offer: ${link}`);
-    const updatedOffer = await this.update(
-      existingOffer.id,
-      createOfferDto as UpdateOfferDto,
-    );
-    return { offer: updatedOffer, created: false };
-  }
-
   async create(createOfferDto: CreateOfferDto): Promise<Offer> {
     const existing = await this.database.offer.findFirst({
       where: {

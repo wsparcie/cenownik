@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 import { DatabaseService } from "../database/database.service";
+import { DiscordService } from "./services/discord.service";
 import { EmailService } from "./services/email.service";
 
 @Injectable()
@@ -10,12 +11,14 @@ export class NotificationService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly emailService: EmailService,
+    private readonly discordService: DiscordService,
   ) {}
 
   async sendPriceMatchNotification(data: {
     userId: number;
     userEmail: string;
     userName: string;
+    discordWebhookUrl?: string | null;
     offer: {
       id: number;
       title: string;
@@ -29,8 +32,20 @@ export class NotificationService {
       createdAt: Date;
       updatedAt: Date;
     };
-  }): Promise<{ emailSent: boolean }> {
-    const results = { emailSent: false };
+  }): Promise<{ emailSent: boolean; discordSent: boolean }> {
+    const results = { emailSent: false, discordSent: false };
+
+    const priceDropPercentage =
+      data.offer.previousPrice !== null && data.offer.previousPrice > 0
+        ? ((data.offer.previousPrice - data.offer.currentPrice) /
+            data.offer.previousPrice) *
+          100
+        : 0;
+
+    const savingsAmount =
+      data.offer.previousPrice === null
+        ? 0
+        : data.offer.previousPrice - data.offer.currentPrice;
 
     try {
       const { subject, html } =
@@ -57,7 +72,61 @@ export class NotificationService {
       );
     }
 
+    if (
+      data.discordWebhookUrl !== undefined &&
+      data.discordWebhookUrl !== null &&
+      data.discordWebhookUrl !== ""
+    ) {
+      try {
+        results.discordSent =
+          await this.discordService.sendPriceMatchNotification(
+            data.discordWebhookUrl,
+            {
+              userName: data.userName,
+              offer: data.offer,
+              priceDropPercentage,
+              savingsAmount,
+            },
+          );
+
+        if (results.discordSent) {
+          this.logger.log(
+            `Discord notification sent for offer #${String(data.offer.id)}`,
+          );
+        }
+      } catch (error) {
+        this.logger.error(
+          "Failed to send Discord notification:",
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
+
     return results;
+  }
+
+  async validateDiscordWebhook(
+    webhookUrl: string,
+  ): Promise<{ valid: boolean; message: string }> {
+    if (!this.discordService.isValidWebhookUrl(webhookUrl)) {
+      return {
+        valid: false,
+        message: "Invalid Discord webhook URL format",
+      };
+    }
+
+    try {
+      const valid = await this.discordService.validateWebhook(webhookUrl);
+      return {
+        valid,
+        message: valid ? "Webhook is valid" : "Webhook validation failed",
+      };
+    } catch (error) {
+      return {
+        valid: false,
+        message: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
   }
 
   async isEmailReady(): Promise<boolean> {
@@ -164,6 +233,40 @@ export class NotificationService {
     } catch (error) {
       this.logger.error(
         "Failed to send test email:",
+        error instanceof Error ? error.message : String(error),
+      );
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  async sendTestDiscord(
+    webhookUrl: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const sampleData = {
+      userName: "Użytkownik",
+      offer: this.sampleOffer,
+      priceDropPercentage: 12.5,
+      savingsAmount: 500,
+    };
+
+    try {
+      const sent = await this.discordService.sendPriceMatchNotification(
+        webhookUrl,
+        sampleData,
+      );
+
+      return {
+        success: sent,
+        message: sent
+          ? "Test Discord notification sent"
+          : "Failed to send Discord notification",
+      };
+    } catch (error) {
+      this.logger.error(
+        "Failed to send test Discord:",
         error instanceof Error ? error.message : String(error),
       );
       return {

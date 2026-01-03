@@ -26,13 +26,14 @@ enum AlertStatus {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique @db.VarChar(255)
-  password  String?  @db.VarChar(255)
-  role      Role     @default(USER)
-  username  String?  @db.VarChar(255)
-  createdAt DateTime @default(now()) @db.Timestamptz
-  updatedAt DateTime @updatedAt @db.Timestamptz
+  id                Int      @id @default(autoincrement())
+  email             String   @unique @db.VarChar(255)
+  password          String?  @db.VarChar(255)
+  role              Role     @default(USER)
+  username          String?  @db.VarChar(255)
+  discordWebhookUrl String?  @db.Text
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @updatedAt @db.Timestamptz
 
   offers Offer[]
 
@@ -74,7 +75,6 @@ model PriceHistory {
   offerId Int
 
   @@index([offerId])
-  @@index([createdAt])
   @@index([targetPriceReached])
   @@map("price_history")
 }
@@ -84,5 +84,7 @@ model Config {
   value     String   @db.Text
   updatedAt DateTime @updatedAt @db.Timestamptz
 
+  @@index([key])
+  @@index([value])
   @@map("config")
 }

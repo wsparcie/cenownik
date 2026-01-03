@@ -181,33 +181,6 @@ describe("OfferService", () => {
     });
   });
 
-  describe("findByLink", () => {
-    it("should return an offer by link", async () => {
-      const mockOffer = {
-        id: 1,
-        link: "https://example.com/offer/1",
-        title: "Test Offer",
-      };
-
-      mockDatabaseService.offer.findUnique.mockResolvedValue(mockOffer);
-
-      const result = await service.findByLink("https://example.com/offer/1");
-
-      expect(mockDatabaseService.offer.findUnique).toHaveBeenCalledWith({
-        where: { link: "https://example.com/offer/1" },
-      });
-      expect(result).toHaveProperty("id", 1);
-    });
-
-    it("should return null if offer not found by link", async () => {
-      mockDatabaseService.offer.findUnique.mockResolvedValue(null);
-
-      const result = await service.findByLink("https://nonexistent.com");
-
-      expect(result).toBeNull();
-    });
-  });
-
   describe("update", () => {
     it("should update an offer", async () => {
       const updateOfferDto: UpdateOfferDto = {
@@ -316,92 +289,6 @@ describe("OfferService", () => {
           otomoto: 2,
         },
       });
-    });
-  });
-
-  describe("findOneOrCreate", () => {
-    it("should create a new offer if it does not exist", async () => {
-      const createOfferDto: CreateOfferDto = {
-        link: "https://example.com/offer/new",
-        title: "New Offer",
-        price: 100,
-        source: "olx",
-      };
-
-      const newOffer = {
-        id: 1,
-        link: createOfferDto.link,
-        title: createOfferDto.title,
-        price: createOfferDto.price,
-        source: createOfferDto.source,
-        description: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        images: [],
-        userId: null,
-      };
-
-      mockDatabaseService.offer.findUnique.mockResolvedValue(null);
-      mockDatabaseService.offer.findFirst.mockResolvedValue(null);
-      mockDatabaseService.offer.create.mockResolvedValue(newOffer);
-
-      const result = await service.findOneOrCreate(createOfferDto);
-
-      expect(result.created).toBe(true);
-      expect(result.offer).toHaveProperty("id", 1);
-    });
-
-    it("should update an existing offer if it exists", async () => {
-      const createOfferDto: CreateOfferDto = {
-        link: "https://example.com/offer/existing",
-        title: "Updated Offer",
-        price: 150,
-        source: "olx",
-      };
-
-      const existingOffer = {
-        id: 1,
-        link: createOfferDto.link,
-        title: "Old Title",
-        price: 100,
-        source: "olx",
-      };
-
-      const updatedOffer = {
-        id: 1,
-        link: createOfferDto.link,
-        title: createOfferDto.title,
-        price: createOfferDto.price,
-        source: createOfferDto.source,
-        description: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        images: [],
-        userId: null,
-      };
-
-      mockDatabaseService.offer.findUnique
-        .mockResolvedValueOnce(existingOffer)
-        .mockResolvedValueOnce(existingOffer);
-      mockDatabaseService.offer.update.mockResolvedValue(updatedOffer);
-
-      const result = await service.findOneOrCreate(createOfferDto);
-
-      expect(result.created).toBe(false);
-      expect(result.offer).toHaveProperty("id", 1);
-      expect(result.offer).toHaveProperty("title", "Updated Offer");
-    });
-
-    it("should throw an error if link is not provided", async () => {
-      const createOfferDto = {
-        title: "Offer without link",
-        price: 100,
-        source: "olx",
-      } as CreateOfferDto;
-
-      await expect(service.findOneOrCreate(createOfferDto)).rejects.toThrow(
-        "Link is required to create or update an offer",
-      );
     });
   });
 });

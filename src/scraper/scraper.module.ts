@@ -4,8 +4,10 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { AuthModule } from "../auth/auth.module";
 import { DatabaseModule } from "../database/database.module";
 import { NotificationModule } from "../notification/notification.module";
-import { ScraperMoreleController } from "./scraper-morele.controller";
-import { ScraperMoreleService } from "./scraper-morele.service";
+import { ScraperController } from "./scraper.controller";
+import { ScraperService } from "./scraper.service";
+import { MoreleScraper } from "./scrapers/morele.scraper";
+import { XkomScraper } from "./scrapers/xkom.scraper";
 
 @Module({
   imports: [
@@ -14,8 +16,8 @@ import { ScraperMoreleService } from "./scraper-morele.service";
     AuthModule,
     NotificationModule,
   ],
-  controllers: [ScraperMoreleController],
-  providers: [ScraperMoreleService],
-  exports: [ScraperMoreleService],
+  controllers: [ScraperController],
+  providers: [ScraperService, MoreleScraper, XkomScraper],
+  exports: [ScraperService],
 })
-export class ScraperMoreleModule {}
+export class ScraperModule {}

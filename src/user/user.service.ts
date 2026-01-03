@@ -114,4 +114,47 @@ export class UserService {
       where: { email },
     });
   }
+
+  async setDiscordWebhook(
+    userId: number,
+    webhookUrl: string,
+  ): Promise<{ success: boolean; message: string }> {
+    await this.database.user.update({
+      where: { id: userId },
+      data: { discordWebhookUrl: webhookUrl },
+    });
+
+    return {
+      success: true,
+      message: "Discord webhook URL set successfully",
+    };
+  }
+
+  async removeDiscordWebhook(
+    userId: number,
+  ): Promise<{ success: boolean; message: string }> {
+    await this.database.user.update({
+      where: { id: userId },
+      data: { discordWebhookUrl: null },
+    });
+
+    return {
+      success: true,
+      message: "Discord webhook URL removed successfully",
+    };
+  }
+
+  async getDiscordWebhook(
+    userId: number,
+  ): Promise<{ hasWebhook: boolean; webhookUrl: string | null }> {
+    const user = await this.database.user.findUnique({
+      where: { id: userId },
+      select: { discordWebhookUrl: true },
+    });
+
+    return {
+      hasWebhook: user?.discordWebhookUrl != null,
+      webhookUrl: user?.discordWebhookUrl ?? null,
+    };
+  }
 }

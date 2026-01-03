@@ -1,30 +1,31 @@
-import * as cheerio from "cheerio";
 import { CronJob } from "cron";
 
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { SchedulerRegistry } from "@nestjs/schedule";
 
 import { DatabaseService } from "../database/database.service";
-import { EmailService } from "../notification/services/email.service";
+import { NotificationService } from "../notification/notification.service";
+import { MoreleScraper } from "./scrapers/morele.scraper";
+import type { PriceScraper, ScrapedPrice } from "./scrapers/scraper.interface";
+import { XkomScraper } from "./scrapers/xkom.scraper";
 
 const SCRAPE_CRON_JOB = "scrape-cron-job";
 const DEFAULT_CRON = "0 * * * *";
 
-interface ScrapedPrice {
-  price: number | null;
-  title: string | null;
-  source: string;
-}
-
 @Injectable()
-export class ScraperMoreleService implements OnModuleInit {
-  private readonly logger = new Logger(ScraperMoreleService.name);
+export class ScraperService implements OnModuleInit {
+  private readonly logger = new Logger(ScraperService.name);
+  private readonly scrapers: PriceScraper[];
 
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly schedulerRegistry: SchedulerRegistry,
-    private readonly emailService: EmailService,
-  ) {}
+    private readonly notificationService: NotificationService,
+    private readonly moreleScraper: MoreleScraper,
+    private readonly xkomScraper: XkomScraper,
+  ) {
+    this.scrapers = [this.moreleScraper, this.xkomScraper];
+  }
 
   async onModuleInit(): Promise<void> {
     const cronExpression = await this.getCronExpression();
@@ -70,60 +71,19 @@ export class ScraperMoreleService implements OnModuleInit {
     }
   }
 
-  private async fetchHtml(url: string): Promise<string> {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `HTTP ${String(response.status)}: ${response.statusText}`,
-      );
-    }
-
-    return response.text();
-  }
-
-  async scrapeMorele(url: string): Promise<ScrapedPrice> {
-    try {
-      const html = await this.fetchHtml(url);
-      const $ = cheerio.load(html);
-
-      const priceAttribute = $(".product-price[data-price]").attr("data-price");
-      let price: number | null = null;
-
-      if (priceAttribute !== undefined) {
-        price = Number.parseFloat(priceAttribute);
-      }
-
-      const title = $("h1.prod-name").text().trim() || null;
-
-      this.logger.debug(
-        `Scraped morele.net: price=${String(price)}, title=${String(title)}`,
-      );
-
-      return { price, title, source: "morele" };
-    } catch (error) {
-      this.logger.error(
-        `Failed to scrape morele.net ${url}: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-      return { price: null, title: null, source: "morele" };
-    }
+  getSupportedStores(): string[] {
+    return ["morele.net", "x-kom.pl"];
   }
 
   async scrapeUrl(url: string): Promise<ScrapedPrice> {
-    if (url.includes("morele.net")) {
-      return this.scrapeMorele(url);
+    const scraper = this.scrapers.find((s) => s.canHandle(url));
+
+    if (scraper === undefined) {
+      this.logger.warn(`Unsupported store: ${url}`);
+      return { price: null, title: null, source: "unknown" };
     }
 
-    this.logger.warn(`Unsupported store: ${url}`);
-    return { price: null, title: null, source: "unknown" };
+    return scraper.scrape(url);
   }
 
   async scrapeAndUpdateOffer(offerId: number): Promise<void> {
@@ -166,9 +126,11 @@ export class ScraperMoreleService implements OnModuleInit {
           );
 
           if (offer.user?.email !== undefined && offer.user.email !== "") {
-            await this.sendTargetReachedEmail(
+            await this.sendTargetReachedNotification(
+              offer.user.id,
               offer.user.email,
               offer.user.username ?? offer.user.email.split("@")[0],
+              offer.user.discordWebhookUrl,
               {
                 id: offer.id,
                 title: scraped.title ?? offer.title,
@@ -202,9 +164,11 @@ export class ScraperMoreleService implements OnModuleInit {
     }
   }
 
-  private async sendTargetReachedEmail(
+  private async sendTargetReachedNotification(
+    userId: number,
     email: string,
     userName: string,
+    discordWebhookUrl: string | null | undefined,
     offer: {
       id: number;
       title: string;
@@ -220,18 +184,28 @@ export class ScraperMoreleService implements OnModuleInit {
     },
   ): Promise<void> {
     try {
-      const { subject, html } =
-        this.emailService.generatePriceMatchNotificationEmail(userName, offer);
+      const results = await this.notificationService.sendPriceMatchNotification(
+        {
+          userId,
+          userEmail: email,
+          userName,
+          discordWebhookUrl,
+          offer,
+        },
+      );
 
-      const success = await this.emailService.sendEmail(email, subject, html);
-      if (success) {
+      if (results.emailSent) {
         this.logger.log(`Email sent to ${email} for target price reached`);
-      } else {
-        this.logger.warn(`Failed to send email to ${email}`);
+      }
+      if (results.discordSent) {
+        this.logger.log(`Discord notification sent for target price reached`);
+      }
+      if (!results.emailSent && !results.discordSent) {
+        this.logger.warn(`No notifications sent to user ${String(userId)}`);
       }
     } catch (error) {
       this.logger.error(
-        `Error sending email to ${email}: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Error sending notifications: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }

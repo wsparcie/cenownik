@@ -30,12 +30,6 @@ export class DatabaseService
     };
   }
 
-  async getAllOffers() {
-    return this.offer.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    });
-  }
   async clearAllData(): Promise<void> {
     await this.offer.deleteMany();
     await this.user.deleteMany();
