@@ -97,7 +97,7 @@ describe("NotificationController", () => {
 
       expect(result).toMatchObject({
         email: { ready: true, type: "Gmail OAuth2" },
-        discord: { ready: true, type: "Webhook (no bot required)" },
+        discord: { ready: true, type: "Webhook" },
       });
       expect(result.timestamp).toBeDefined();
     });

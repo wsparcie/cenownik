@@ -24,12 +24,19 @@ import {
 import { AuthGuard } from "../auth/auth.guard";
 import { Roles } from "../auth/roles/role.decorator";
 import { RoleGuard } from "../auth/roles/role.guard";
-import { ScraperMoreleService } from "./scraper-morele.service";
+import { ScraperService } from "./scraper.service";
 
 @ApiTags("scraper")
 @Controller("scraper")
-export class ScraperMoreleController {
-  constructor(private readonly scraperService: ScraperMoreleService) {}
+export class ScraperController {
+  constructor(private readonly scraperService: ScraperService) {}
+
+  @Get("stores")
+  @ApiOperation({ summary: "Get list of supported stores" })
+  @ApiResponse({ status: 200, description: "List of supported stores" })
+  getSupportedStores(): { stores: string[] } {
+    return { stores: this.scraperService.getSupportedStores() };
+  }
 
   @Post("run")
   @ApiOperation({ summary: "Manually trigger scraping for all offers" })
