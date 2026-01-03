@@ -58,13 +58,3 @@ export class CreateOfferDto {
   @IsOptional()
   userId?: number;
 }
-
-export function dtoToString(dto: CreateOfferDto): string {
-  return `
-Link: ${dto.link}
-Title: ${dto.title}
-Price: ${String(dto.price)}
-Description: ${dto.description ?? "N/A"}
-Source: ${dto.source}
-`.trim();
-}
