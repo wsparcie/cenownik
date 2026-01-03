@@ -13,7 +13,6 @@ import {
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
-  ApiBody,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -24,6 +23,7 @@ import {
 import { AuthGuard } from "../auth/auth.guard";
 import { Roles } from "../auth/roles/role.decorator";
 import { RoleGuard } from "../auth/roles/role.guard";
+import { UpdateCronDto } from "./dto/update-cron.dto";
 import { ScraperService } from "./scraper.service";
 
 @ApiTags("scraper")
@@ -83,27 +83,19 @@ export class ScraperController {
 
   @Patch("config/cron")
   @ApiOperation({ summary: "Update cron expression for scraping" })
-  @ApiBody({
-    schema: {
-      type: "object",
-      properties: {
-        cron: {
-          type: "string",
-          example: "*/30 * * * *",
-          description: "Cron expression (e.g., every 30 min: */30 * * * *)",
-        },
-      },
-    },
-  })
   @ApiResponse({ status: 200, description: "Cron expression updated" })
+  @ApiResponse({
+    status: 400,
+    description: "Invalid cron or interval less than 10 minutes",
+  })
   @UseGuards(AuthGuard, RoleGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth("access-token")
   async setCron(
-    @Body("cron") cron: string,
+    @Body() dto: UpdateCronDto,
   ): Promise<{ message: string; cron: string }> {
-    await this.scraperService.setCronExpression(cron);
-    return { message: "Cron expression updated", cron };
+    await this.scraperService.setCronExpression(dto.cron);
+    return { message: "Cron expression updated", cron: dto.cron };
   }
 
   @Get("history/:offerId")

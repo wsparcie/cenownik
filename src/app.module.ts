@@ -6,7 +6,7 @@ import { AuthModule } from "./auth/auth.module";
 import { DatabaseModule } from "./database/database.module";
 import { NotificationModule } from "./notification/notification.module";
 import { OfferModule } from "./offer/offer.module";
-import { ScraperModule } from "./scraper-morele/scraper.module";
+import { ScraperModule } from "./scraper/scraper.module";
 import { UserModule } from "./user/user.module";
 
 @Module({

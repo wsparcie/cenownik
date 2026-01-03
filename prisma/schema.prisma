@@ -75,7 +75,6 @@ model PriceHistory {
   offerId Int
 
   @@index([offerId])
-  @@index([createdAt])
   @@index([targetPriceReached])
   @@map("price_history")
 }
@@ -85,5 +84,7 @@ model Config {
   value     String   @db.Text
   updatedAt DateTime @updatedAt @db.Timestamptz
 
+  @@index([key])
+  @@index([value])
   @@map("config")
 }
