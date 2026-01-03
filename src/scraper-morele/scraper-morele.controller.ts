@@ -6,8 +6,8 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
-  Put,
   Query,
   UseGuards,
 } from "@nestjs/common";
@@ -74,7 +74,7 @@ export class ScraperMoreleController {
     return { cron };
   }
 
-  @Put("config/cron")
+  @Patch("config/cron")
   @ApiOperation({ summary: "Update cron expression for scraping" })
   @ApiBody({
     schema: {

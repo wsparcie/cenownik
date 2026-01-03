@@ -9,6 +9,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Post,
   Request,
   UseGuards,
 } from "@nestjs/common";
@@ -23,6 +24,10 @@ import {
 import { AuthGuard } from "../auth/auth.guard";
 import { Roles } from "../auth/roles/role.decorator";
 import { RoleGuard } from "../auth/roles/role.guard";
+import {
+  DiscordWebhookResponseDto,
+  SetDiscordWebhookDto,
+} from "./dto/discord-webhook.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UserResponseDto } from "./dto/user-response.dto";
 import { UserService } from "./user.service";
@@ -104,5 +109,80 @@ export class UserController {
   @ApiBearerAuth("access-token")
   async remove(@Param("email") email: string): Promise<void> {
     return this.userService.remove(email);
+  }
+
+  @Get("me/discord-webhook")
+  @ApiOperation({ summary: "Get current user's Discord webhook status" })
+  @ApiResponse({
+    status: 200,
+    description: "Discord webhook status retrieved successfully",
+    type: DiscordWebhookResponseDto,
+  })
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("access-token")
+  async getDiscordWebhook(
+    @Request() request: { user: { sub: number } },
+  ): Promise<DiscordWebhookResponseDto> {
+    const result = await this.userService.getDiscordWebhook(request.user.sub);
+    return {
+      success: true,
+      message: result.hasWebhook
+        ? "Discord webhook is configured"
+        : "No Discord webhook configured",
+      hasWebhook: result.hasWebhook,
+      webhookUrl: result.webhookUrl,
+    };
+  }
+
+  @Post("me/discord-webhook")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Set Discord webhook URL for notifications" })
+  @ApiResponse({
+    status: 200,
+    description: "Discord webhook URL set successfully",
+    type: DiscordWebhookResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Invalid webhook URL format",
+  })
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("access-token")
+  async setDiscordWebhook(
+    @Body() dto: SetDiscordWebhookDto,
+    @Request() request: { user: { sub: number } },
+  ): Promise<DiscordWebhookResponseDto> {
+    const result = await this.userService.setDiscordWebhook(
+      request.user.sub,
+      dto.webhookUrl,
+    );
+    return {
+      ...result,
+      webhookUrl: dto.webhookUrl,
+      hasWebhook: true,
+    };
+  }
+
+  @Delete("me/discord-webhook")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Remove Discord webhook URL" })
+  @ApiResponse({
+    status: 200,
+    description: "Discord webhook URL removed successfully",
+    type: DiscordWebhookResponseDto,
+  })
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("access-token")
+  async removeDiscordWebhook(
+    @Request() request: { user: { sub: number } },
+  ): Promise<DiscordWebhookResponseDto> {
+    const result = await this.userService.removeDiscordWebhook(
+      request.user.sub,
+    );
+    return {
+      ...result,
+      hasWebhook: false,
+      webhookUrl: null,
+    };
   }
 }

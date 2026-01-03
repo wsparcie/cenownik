@@ -5,7 +5,7 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { SchedulerRegistry } from "@nestjs/schedule";
 
 import { DatabaseService } from "../database/database.service";
-import { EmailService } from "../notification/services/email.service";
+import { NotificationService } from "../notification/notification.service";
 
 const SCRAPE_CRON_JOB = "scrape-cron-job";
 const DEFAULT_CRON = "0 * * * *";
@@ -23,7 +23,7 @@ export class ScraperMoreleService implements OnModuleInit {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly schedulerRegistry: SchedulerRegistry,
-    private readonly emailService: EmailService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -166,9 +166,11 @@ export class ScraperMoreleService implements OnModuleInit {
           );
 
           if (offer.user?.email !== undefined && offer.user.email !== "") {
-            await this.sendTargetReachedEmail(
+            await this.sendTargetReachedNotification(
+              offer.user.id,
               offer.user.email,
               offer.user.username ?? offer.user.email.split("@")[0],
+              offer.user.discordWebhookUrl,
               {
                 id: offer.id,
                 title: scraped.title ?? offer.title,
@@ -202,9 +204,11 @@ export class ScraperMoreleService implements OnModuleInit {
     }
   }
 
-  private async sendTargetReachedEmail(
+  private async sendTargetReachedNotification(
+    userId: number,
     email: string,
     userName: string,
+    discordWebhookUrl: string | null | undefined,
     offer: {
       id: number;
       title: string;
@@ -220,18 +224,28 @@ export class ScraperMoreleService implements OnModuleInit {
     },
   ): Promise<void> {
     try {
-      const { subject, html } =
-        this.emailService.generatePriceMatchNotificationEmail(userName, offer);
+      const results = await this.notificationService.sendPriceMatchNotification(
+        {
+          userId,
+          userEmail: email,
+          userName,
+          discordWebhookUrl,
+          offer,
+        },
+      );
 
-      const success = await this.emailService.sendEmail(email, subject, html);
-      if (success) {
+      if (results.emailSent) {
         this.logger.log(`Email sent to ${email} for target price reached`);
-      } else {
-        this.logger.warn(`Failed to send email to ${email}`);
+      }
+      if (results.discordSent) {
+        this.logger.log(`Discord notification sent for target price reached`);
+      }
+      if (!results.emailSent && !results.discordSent) {
+        this.logger.warn(`No notifications sent to user ${String(userId)}`);
       }
     } catch (error) {
       this.logger.error(
-        `Error sending email to ${email}: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Error sending notifications: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }

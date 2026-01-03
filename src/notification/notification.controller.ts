@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Post, Query } from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 
+import { TestDiscordDto } from "./dto/test-discord.dto";
 import { TestEmailDto } from "./dto/test-email.dto";
+import { ValidateWebhookDto } from "./dto/validate-webhook.dto";
 import { NotificationService } from "./notification.service";
 import { EmailService } from "./services/email.service";
 
@@ -45,7 +47,7 @@ export class NotificationController {
   @Get("status")
   @ApiOperation({
     summary: "Check notification services status",
-    description: "Returns the status of email service",
+    description: "Returns the status of email and Discord services",
   })
   @ApiResponse({
     status: 200,
@@ -58,6 +60,10 @@ export class NotificationController {
       email: {
         ready: emailReady,
         type: "Gmail OAuth2",
+      },
+      discord: {
+        ready: true,
+        type: "Webhook",
       },
       timestamp: new Date().toISOString(),
     };
@@ -89,6 +95,23 @@ export class NotificationController {
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
+  }
+
+  @Get("health/discord")
+  @ApiOperation({ summary: "Check Discord webhook service health status" })
+  @ApiResponse({ status: 200, description: "Discord health check completed" })
+  checkDiscordHealth() {
+    return {
+      status: "healthy",
+      service: "discord",
+      timestamp: new Date().toISOString(),
+      message: "Discord webhook notification service is ready",
+      details: {
+        type: "webhook",
+        description:
+          "Users provide their own Discord webhook URLs for notifications",
+      },
+    };
   }
 
   private getEmailConfigStatus() {
@@ -128,5 +151,20 @@ export class NotificationController {
       dto.email,
       dto.userName ?? "Użytkownik",
     );
+  }
+
+  @Post("test/discord")
+  @ApiOperation({ summary: "Send a test Discord notification" })
+  @ApiResponse({ status: 200, description: "Test Discord sent successfully" })
+  @ApiResponse({ status: 500, description: "Failed to send test Discord" })
+  async sendTestDiscord(@Body() dto: TestDiscordDto) {
+    return this.notificationService.sendTestDiscord(dto.webhookUrl);
+  }
+
+  @Post("validate/discord")
+  @ApiOperation({ summary: "Validate a Discord webhook URL" })
+  @ApiResponse({ status: 200, description: "Webhook validation completed" })
+  async validateDiscordWebhook(@Body() dto: ValidateWebhookDto) {
+    return this.notificationService.validateDiscordWebhook(dto.webhookUrl);
   }
 }
